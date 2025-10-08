@@ -13,7 +13,6 @@ export class SpatialGrid {
     this.queryId = -1;
 
     const totalCells = this.cols * this.rows;
-
     for (let i = 0; i < totalCells; ++i) {
       this.cells[i] = [];
     }
@@ -114,7 +113,7 @@ export class SpatialGrid {
     this.insert(client);
   }
 
-  query(client, neighbors = []) {
+  query(client, results = []) {
     const { minX, minY, maxX, maxY } = client.indices;
 
     client.queryId = ++this.queryId;
@@ -136,13 +135,13 @@ export class SpatialGrid {
             client.bound.overlaps(neighbor.bound)
           ) {
             neighbor.queryId = client.queryId;
-            neighbors.push(neighbor);
+            results.push(neighbor);
           }
         }
       }
     }
 
-    return neighbors;
+    return results;
   }
 
   render(ctx) {

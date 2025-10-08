@@ -1,82 +1,94 @@
-import { Bound } from './Bound.js';
-
-class Node {
-  constructor(x, y, w, h, level = 1) {
-    this.bound = new Bound(x, y, x + w, y + h);
-    this.bodies = [];
-    this.isLeaf = true;
-    this.level = level;
-  }
-}
-
 export class QuadTree {
-  constructor(x, y, w, h, capacity = 4, depth = 4) {
-    this.node = new Node(x, y, w, h);
-    this.capacity = capacity;
+  constructor(x, y, width, height, maxLength = 4, maxDepth = 4, depth = 1) {
+    this.minX = x;
+    this.minY = y;
+    this.maxX = x + width;
+    this.maxY = y + height;
+    this.maxLength = maxLength;
+    this.maxDepth = maxDepth;
     this.depth = depth;
+
+    this.isLeaf = true;
+    this.bodies = [];
+    this.stack = [];
     this.queryId = -1;
+
+    this.topLeft = null;
+    this.topRight = null;
+    this.bottomLeft = null;
+    this.bottomRight = null;
   }
 
-  branch(node) {
-    const x = node.bound.minX;
-    const y = node.bound.minY;
-    const hw = node.bound.width * 0.5;
-    const hh = node.bound.height * 0.5;
-    const l = node.level + 1;
+  branch() {
+    const width = (this.maxX - this.minX) * 0.5;
+    const height = (this.maxY - this.minY) * 0.5;
+    const depth = this.depth + 1;
 
-    node.tLeft = new Node(x, y, hw, hh, l);
-    node.tRight = new Node(x + hw, y, hw, hh, l);
-    node.bLeft = new Node(x, y + hh, hw, hh, l);
-    node.bRight = new Node(x + hw, y + hh, hw, hh, l);
-    node.isLeaf = false;
-  }
-
-  _insert(body, node) {
-    if (!node.bound.overlaps(body.bound)) {
-      return null;
-    }
-
-    if (node.bodies.length < this.capacity || node.level > this.depth) {
-      node.bodies.push(body);
-      return null;
-    }
-
-    if (node.isLeaf) {
-      this.branch(node);
-    }
-
-    this._insert(body, node.tLeft);
-    this._insert(body, node.tRight);
-    this._insert(body, node.bLeft);
-    this._insert(body, node.bRight);
+    this.topLeft = new QuadTree(
+      this.minX,
+      this.minY,
+      width,
+      height,
+      this.maxLength,
+      this.maxDepth,
+      depth
+    );
+    this.topRight = new QuadTree(
+      this.minX + width,
+      this.minY,
+      width,
+      height,
+      this.maxLength,
+      this.maxDepth,
+      depth
+    );
+    this.bottomLeft = new QuadTree(
+      this.minX,
+      this.minY + height,
+      width,
+      height,
+      this.maxLength,
+      this.maxDepth,
+      depth
+    );
+    this.bottomRight = new QuadTree(
+      this.minX + width,
+      this.minY + height,
+      width,
+      height,
+      this.maxLength,
+      this.maxDepth,
+      depth
+    );
+    this.isLeaf = false;
   }
 
   insert(body) {
-    this._insert(body, this.node);
-  }
+    this.stack.length = 0;
+    this.stack.push(this);
 
-  _query(body, node, results) {
-    if (!node.bound.overlaps(body.bound)) {
-      return null;
-    }
+    while (this.stack.length) {
+      const node = this.stack.pop();
 
-    for (let i = 0; i < node.bodies.length; ++i) {
-      const neighbor = node.bodies[i];
-
-      if (
-        body.queryId !== neighbor.queryId &&
-        body.bound.overlaps(neighbor.bound)
-      ) {
-        neighbor.queryId = body.queryId;
-        results.push(neighbor);
+      if (!body.bound.overlaps(node)) {
+        continue;
       }
-    }
 
-    if (!node.isLeaf) {
-      this._query(body, node.tLeft, results);
-      this._query(body, node.tRight, results);
-      this._query(body, node.bLeft, results);
-      this._query(body, node.bRight, results);
+      if (node.bodies.length < node.maxLength || node.depth > node.maxDepth) {
+        node.bodies.push(body);
+        continue;
+      }
+
+      if (node.isLeaf) {
+        node.branch();
+      }
+
+      this.stack.push(
+        node.topLeft,
+        node.topRight,
+        node.bottomLeft,
+        node.bottomRight
+      );
     }
   }
 
@@ -84,52 +96,86 @@ export class QuadTree {
     const results = [];
 
     body.queryId = ++this.queryId;
-    this._query(body, this.node, results);
+    this.stack.length = 0;
+    this.stack.push(this);
+
+    while (this.stack.length) {
+      const node = this.stack.pop();
+
+      if (!body.bound.overlaps(node)) {
+        continue;
+      }
+
+      for (let i = 0; i < node.bodies.length; ++i) {
+        const neighbor = node.bodies[i];
+
+        if (
+          body.queryId !== neighbor.queryId &&
+          body.bound.overlaps(neighbor.bound)
+        ) {
+          neighbor.queryId = body.queryId;
+          results.push(neighbor);
+        }
+      }
+
+      if (!node.isLeaf) {
+        this.stack.push(
+          node.topLeft,
+          node.topRight,
+          node.bottomLeft,
+          node.bottomRight
+        );
+      }
+    }
 
     return results;
   }
 
-  _clear(node) {
-    node.bodies.length = 0;
-
-    if (!node.isLeaf) {
-      this._clear(node.tLeft);
-      this._clear(node.tRight);
-      this._clear(node.bLeft);
-      this._clear(node.bRight);
-      node.isLeaf = true;
-    }
-  }
-
   clear() {
-    this._clear(this.node);
-  }
+    this.queryId = 0;
+    this.stack.length = 0;
+    this.stack.push(this);
 
-  _draw(ctx, node) {
-    const minX = node.bound.minX;
-    const minY = node.bound.minY;
-    const maxX = node.bound.maxX;
-    const maxY = node.bound.maxY;
+    while (this.stack.length) {
+      const node = this.stack.pop();
 
-    ctx.moveTo(minX, minY);
-    ctx.lineTo(maxX, minY);
-    ctx.lineTo(maxX, maxY);
-    ctx.lineTo(minX, maxY);
-    ctx.lineTo(minX, minY);
-
-    if (!node.isLeaf) {
-      this._draw(ctx, node.tLeft);
-      this._draw(ctx, node.tRight);
-      this._draw(ctx, node.bLeft);
-      this._draw(ctx, node.bRight);
+      node.bodies.length = 0;
+      if (!node.isLeaf) {
+        this.stack.push(
+          node.topLeft,
+          node.topRight,
+          node.bottomLeft,
+          node.bottomRight
+        );
+        node.isLeaf = true;
+      }
     }
   }
 
   render(ctx) {
-    ctx.strokeStyle = 'green';
+    this.stack.length = 0;
+    this.stack.push(this);
 
+    ctx.strokeStyle = 'green';
     ctx.beginPath();
-    this._draw(ctx, this.node);
+    while (this.stack.length) {
+      const node = this.stack.pop();
+
+      ctx.moveTo(node.minX, node.minY);
+      ctx.lineTo(node.maxX, node.minY);
+      ctx.lineTo(node.maxX, node.maxY);
+      ctx.lineTo(node.minX, node.maxY);
+      ctx.lineTo(node.minX, node.minY);
+
+      if (!node.isLeaf) {
+        this.stack.push(
+          node.topLeft,
+          node.topRight,
+          node.bottomLeft,
+          node.bottomRight
+        );
+      }
+    }
     ctx.stroke();
   }
 }

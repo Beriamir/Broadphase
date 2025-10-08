@@ -1,4 +1,4 @@
-export class SweepPrune {
+export class SAP {
   constructor() {
     this.bodies = [];
   }

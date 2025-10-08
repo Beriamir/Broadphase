@@ -1,7 +1,7 @@
 import { Vector } from './Vector.js';
 import { QuadTree } from './QuadTree.js';
 import { SpatialGrid } from './SpatialGrid.js';
-import { SweepPrune } from './SweepPrune.js';
+import { SAP } from './SAP.js';
 import { Circle } from './Circle.js';
 import { Animator } from './Animator.js';
 
@@ -12,21 +12,22 @@ onload = function () {
   const canvasHeight = (canvas.height = 600);
 
   const animator = new Animator(60);
-  const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight);
-  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight);
-  const sweepPrune = new SweepPrune();
+  const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4, 4);
+  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 40);
+  const sAP = new SAP();
 
   const circles = [];
-  const circlesCount = 1000;
+  const circlesNum = 1000;
   const circlesRadius = 10;
 
   const contacts = [];
-  const broadphases = ['QuadTree', 'SpatialGrid', 'SweepPrune', 'BruteForce'];
-  const broadphaseChangeBtn = document.getElementById('broadphaseChangeBtn');
+  const contactsKey = new Set();
+  const broadphases = ['QuadTree', 'SpatialGrid', 'SAP', 'BruteForce'];
+  const broadphaseBtn = document.getElementById('broadphaseBtn');
   let broadphaseIndex = 0;
   let collisionChecks = 0;
 
-  broadphaseChangeBtn.addEventListener('click', () => {
+  broadphaseBtn.addEventListener('click', () => {
     broadphaseIndex = (broadphaseIndex + 1) % broadphases.length;
 
     let bgColor = null;
@@ -37,7 +38,7 @@ onload = function () {
       case 'SpatialGrid':
         bgColor = 'gray';
         break;
-      case 'SweepPrune':
+      case 'SAP':
         bgColor = 'orange';
         break;
       case 'BruteForce':
@@ -45,7 +46,7 @@ onload = function () {
         break;
     }
 
-    broadphaseChangeBtn.style.backgroundColor = bgColor;
+    broadphaseBtn.style.backgroundColor = bgColor;
   });
 
   function initialize() {
@@ -54,7 +55,7 @@ onload = function () {
     ctx.textAlign = 'start';
     ctx.textBaseline = 'top';
 
-    for (let i = 0; i < circlesCount; i++) {
+    for (let i = 0; i < circlesNum; i++) {
       const radius = Math.random() * circlesRadius + circlesRadius * 0.25;
       const x = Math.random() * (canvasWidth - radius * 2) + radius;
       const y = Math.random() * (canvasHeight - radius * 2) + radius;
@@ -64,13 +65,11 @@ onload = function () {
       circles.push(circle);
       quadTree.insert(circle);
       spatialGrid.insert(circle);
-      sweepPrune.insert(circle);
+      sAP.insert(circle);
     }
   }
 
-  function render(ctx, dt) {
-    const broadphase = broadphases[broadphaseIndex];
-
+  function render(ctx, dt, broadphase) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     switch (broadphase) {
       case 'QuadTree':
@@ -79,8 +78,8 @@ onload = function () {
       case 'SpatialGrid':
         spatialGrid.render(ctx);
         break;
-      case 'SweepPrune':
-        sweepPrune.render(ctx);
+      case 'SAP':
+        sAP.render(ctx);
         break;
     }
 
@@ -88,22 +87,22 @@ onload = function () {
       circle.render(ctx);
     }
 
-    const views = [
+    const realtimeInfo = [
       `fps: ${Math.floor(1000 / dt)}`,
-      `objects: ${circlesCount}`,
+      `objects: ${circlesNum}`,
       `broadphase: ${broadphase}`,
       `collision checks: ${collisionChecks}`
     ];
-    const gap = 16;
-    const n = views.length;
+    const lineHeight = 16;
+    const n = realtimeInfo.length;
     const width = 200;
-    const height = gap * n;
+    const height = lineHeight * n;
 
     ctx.fillStyle = '#000000b6';
-    ctx.fillRect(gap, gap, width, height);
+    ctx.fillRect(lineHeight, lineHeight, width, height);
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < n; ++i) {
-      ctx.fillText(views[i], gap, gap * i + gap);
+      ctx.fillText(realtimeInfo[i], lineHeight, lineHeight * i + lineHeight);
     }
   }
 
@@ -178,16 +177,17 @@ onload = function () {
   }
 
   function update(dt) {
-    render(ctx, dt);
-
     const broadphase = broadphases[broadphaseIndex];
 
+    render(ctx, dt, broadphase);
+
     contacts.length = 0;
+    contactsKey.clear();
     collisionChecks = 0;
     if (broadphase == 'QuadTree') {
       quadTree.clear();
-    } else if (broadphase == 'SweepPrune') {
-      sweepPrune.update();
+    } else if (broadphase == 'SAP') {
+      sAP.update();
     }
 
     for (let i = 0; i < circles.length; ++i) {
@@ -203,8 +203,8 @@ onload = function () {
           spatialGrid.update(circle);
           nearby = spatialGrid.query(circle);
           break;
-        case 'SweepPrune':
-          nearby = sweepPrune.query(circle);
+        case 'SAP':
+          nearby = sAP.query(circle);
           break;
         case 'BruteForce':
           nearby = [];
@@ -215,6 +215,14 @@ onload = function () {
       }
 
       for (const other of nearby) {
+        const id0 = circle.id;
+        const id1 = other.id;
+        const key = id0 < id1 ? id0 * circlesNum + id1 : id1 * circlesNum + id0;
+
+        if (contactsKey.has(key)) {
+          continue;
+        } else contactsKey.add(key);
+
         const contact = collide(circle, other);
 
         if (contact) contacts.push(contact);
