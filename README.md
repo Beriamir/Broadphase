@@ -9,7 +9,9 @@ The goal was to achieve faster collision detection without overcomplicating the 
 
 - **QuadTree** — hierarchical space partitioning.
 - **Spatial Grid** — uniform grid-based partitioning.
-- **Sweep and Prune (SAP)** — sorting along an axis for fast overlap checks.
+- **Spatial Hash Grid** — uniform grid-based partitioning (boundless).
+- **Sweep and Prune** — sorting along an axis for fast overlap checks.
+- **KD-Tree** — k-dimentional space partitioning.
 - **Brute Force** — the baseline, included because... why not?
 
 ---
@@ -22,4 +24,4 @@ The goal was to achieve faster collision detection without overcomplicating the 
 
 ---
 
-_"Simple, fast, and good enough"_
+> _"Simple, fast, and good enough"_
