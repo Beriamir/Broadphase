@@ -14,13 +14,13 @@ onload = function () {
   const canvasHeight = (canvas.height = 600);
 
   const circles = [];
-  const circlesNum = 1000;
+  const circlesNum = 500;
   const circlesRadius = 10;
 
   const animator = new Animator(60);
   const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4);
-  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 40);
-  const spatialHashGrid = new SpatialHashGrid(40, circlesNum * 2);
+  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 20);
+  const spatialHashGrid = new SpatialHashGrid(20, circlesNum * 2);
   const sweepAndPrune = new SweepAndPrune();
   const kDTree = new KDTree();
 
