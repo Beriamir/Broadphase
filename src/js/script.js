@@ -1,9 +1,11 @@
 import { Vector } from './Vector.js';
+import { Animator } from './Animator.js';
+import { Circle } from './Circle.js';
 import { QuadTree } from './QuadTree.js';
 import { SpatialGrid } from './SpatialGrid.js';
-import { SAP } from './SAP.js';
-import { Circle } from './Circle.js';
-import { Animator } from './Animator.js';
+import { SpatialHashGrid } from './SpatialHashGrid.js';
+import { SweepAndPrune } from './SweepAndPrune.js';
+import { KDTree } from './KDTree.js';
 
 onload = function () {
   const canvas = document.getElementById('canvas');
@@ -11,18 +13,27 @@ onload = function () {
   const canvasWidth = (canvas.width = 800);
   const canvasHeight = (canvas.height = 600);
 
-  const animator = new Animator(60);
-  const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4, 4);
-  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 40);
-  const sAP = new SAP();
-
   const circles = [];
   const circlesNum = 1000;
   const circlesRadius = 10;
 
+  const animator = new Animator(60);
+  const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4);
+  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 40);
+  const spatialHashGrid = new SpatialHashGrid(40, circlesNum * 2);
+  const sweepAndPrune = new SweepAndPrune();
+  const kDTree = new KDTree();
+
   const contacts = [];
   const contactsKey = new Set();
-  const broadphases = ['QuadTree', 'SpatialGrid', 'SAP', 'BruteForce'];
+  const broadphases = [
+    'QuadTree',
+    'SpatialGrid',
+    'SpatialHashGrid',
+    'SweepAndPrune',
+    'KDTree',
+    'BruteForce'
+  ];
   const broadphaseBtn = document.getElementById('broadphaseBtn');
   let broadphaseIndex = 0;
   let collisionChecks = 0;
@@ -33,13 +44,19 @@ onload = function () {
     let bgColor = null;
     switch (broadphases[broadphaseIndex]) {
       case 'QuadTree':
-        bgColor = 'green';
+        bgColor = '#11f811';
         break;
       case 'SpatialGrid':
-        bgColor = 'gray';
+        bgColor = '#b2b2b2';
         break;
-      case 'SAP':
+      case 'SpatialHashGrid':
+        bgColor = '#0067ff';
+        break;
+      case 'SweepAndPrune':
         bgColor = 'orange';
+        break;
+      case 'KDTree':
+        bgColor = 'violet';
         break;
       case 'BruteForce':
         bgColor = 'red';
@@ -54,18 +71,22 @@ onload = function () {
     ctx.letterSpacing = '1px';
     ctx.textAlign = 'start';
     ctx.textBaseline = 'top';
+    ctx.lineWidth = 0.5;
 
     for (let i = 0; i < circlesNum; i++) {
       const radius = Math.random() * circlesRadius + circlesRadius * 0.25;
       const x = Math.random() * (canvasWidth - radius * 2) + radius;
       const y = Math.random() * (canvasHeight - radius * 2) + radius;
       const circle = new Circle(x, y, radius);
-      circle.linearVelocity.random().scale(0.1);
 
+      circle.linearVelocity.random().scale(0.1);
       circles.push(circle);
+
       quadTree.insert(circle);
       spatialGrid.insert(circle);
-      sAP.insert(circle);
+      spatialHashGrid.insert(circle);
+      sweepAndPrune.insert(circle);
+      kDTree.insert(circle);
     }
   }
 
@@ -78,8 +99,14 @@ onload = function () {
       case 'SpatialGrid':
         spatialGrid.render(ctx);
         break;
-      case 'SAP':
-        sAP.render(ctx);
+      case 'SpatialHashGrid':
+        spatialHashGrid.render(ctx);
+        break;
+      case 'SweepAndPrune':
+        sweepAndPrune.render(ctx);
+        break;
+      case 'KDTree':
+        kDTree.render(ctx);
         break;
     }
 
@@ -87,14 +114,14 @@ onload = function () {
       circle.render(ctx);
     }
 
-    const realtimeInfo = [
+    const gui = [
       `fps: ${Math.floor(1000 / dt)}`,
       `objects: ${circlesNum}`,
       `broadphase: ${broadphase}`,
       `collision checks: ${collisionChecks}`
     ];
     const lineHeight = 16;
-    const n = realtimeInfo.length;
+    const n = gui.length;
     const width = 200;
     const height = lineHeight * n;
 
@@ -102,7 +129,7 @@ onload = function () {
     ctx.fillRect(lineHeight, lineHeight, width, height);
     ctx.fillStyle = '#ffffff';
     for (let i = 0; i < n; ++i) {
-      ctx.fillText(realtimeInfo[i], lineHeight, lineHeight * i + lineHeight);
+      ctx.fillText(gui[i], lineHeight, lineHeight * i + lineHeight);
     }
   }
 
@@ -184,10 +211,19 @@ onload = function () {
     contacts.length = 0;
     contactsKey.clear();
     collisionChecks = 0;
-    if (broadphase == 'QuadTree') {
-      quadTree.clear();
-    } else if (broadphase == 'SAP') {
-      sAP.update();
+    switch (broadphase) {
+      case 'QuadTree':
+        quadTree.clear();
+        break;
+      case 'SpatialHashGrid':
+        spatialHashGrid.update();
+        break;
+      case 'SweepAndPrune':
+        sweepAndPrune.update();
+        break;
+      case 'KDTree':
+        kDTree.update();
+        break;
     }
 
     for (let i = 0; i < circles.length; ++i) {
@@ -203,8 +239,14 @@ onload = function () {
           spatialGrid.update(circle);
           nearby = spatialGrid.query(circle);
           break;
-        case 'SAP':
-          nearby = sAP.query(circle);
+        case 'SpatialHashGrid':
+          nearby = spatialHashGrid.query(circle);
+          break;
+        case 'SweepAndPrune':
+          nearby = sweepAndPrune.query(circle);
+          break;
+        case 'KDTree':
+          nearby = kDTree.query(circle);
           break;
         case 'BruteForce':
           nearby = [];

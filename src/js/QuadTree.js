@@ -1,71 +1,29 @@
-export class QuadTree {
-  constructor(x, y, width, height, maxLength = 4, maxDepth = 4, depth = 1) {
-    this.minX = x;
-    this.minY = y;
-    this.maxX = x + width;
-    this.maxY = y + height;
-    this.maxLength = maxLength;
-    this.maxDepth = maxDepth;
-    this.depth = depth;
+import { QuadNode } from './QuadNode.js';
 
-    this.isLeaf = true;
-    this.bodies = [];
+export class QuadTree {
+  constructor(x, y, width, height, length) {
+    this.node = new QuadNode(x, y, width, height);
+    this.length = length;
     this.stack = [];
     this.queryId = -1;
-
-    this.topLeft = null;
-    this.topRight = null;
-    this.bottomLeft = null;
-    this.bottomRight = null;
   }
 
-  branch() {
-    const width = (this.maxX - this.minX) * 0.5;
-    const height = (this.maxY - this.minY) * 0.5;
-    const depth = this.depth + 1;
+  branch(node) {
+    const x = node.minX;
+    const y = node.minY;
+    const hw = (node.maxX - node.minX) * 0.5;
+    const hh = (node.maxY - node.minY) * 0.5;
 
-    this.topLeft = new QuadTree(
-      this.minX,
-      this.minY,
-      width,
-      height,
-      this.maxLength,
-      this.maxDepth,
-      depth
-    );
-    this.topRight = new QuadTree(
-      this.minX + width,
-      this.minY,
-      width,
-      height,
-      this.maxLength,
-      this.maxDepth,
-      depth
-    );
-    this.bottomLeft = new QuadTree(
-      this.minX,
-      this.minY + height,
-      width,
-      height,
-      this.maxLength,
-      this.maxDepth,
-      depth
-    );
-    this.bottomRight = new QuadTree(
-      this.minX + width,
-      this.minY + height,
-      width,
-      height,
-      this.maxLength,
-      this.maxDepth,
-      depth
-    );
-    this.isLeaf = false;
+    node.topLeft = new QuadNode(x, y, hw, hh);
+    node.topRight = new QuadNode(x + hw, y, hw, hh);
+    node.bottomLeft = new QuadNode(x, y + hh, hw, hh);
+    node.bottomRight = new QuadNode(x + hw, y + hh, hw, hh);
+    node.isLeaf = false;
   }
 
   insert(body) {
     this.stack.length = 0;
-    this.stack.push(this);
+    this.stack.push(this.node);
 
     while (this.stack.length) {
       const node = this.stack.pop();
@@ -74,13 +32,13 @@ export class QuadTree {
         continue;
       }
 
-      if (node.bodies.length < node.maxLength || node.depth > node.maxDepth) {
+      if (node.bodies.length < this.length) {
         node.bodies.push(body);
         continue;
       }
 
       if (node.isLeaf) {
-        node.branch();
+        this.branch(node);
       }
 
       this.stack.push(
@@ -92,12 +50,10 @@ export class QuadTree {
     }
   }
 
-  query(body) {
-    const results = [];
-
-    body.queryId = ++this.queryId;
+  query(body, results = []) {
     this.stack.length = 0;
-    this.stack.push(this);
+    this.stack.push(this.node);
+    body.queryId = ++this.queryId;
 
     while (this.stack.length) {
       const node = this.stack.pop();
@@ -110,8 +66,8 @@ export class QuadTree {
         const neighbor = node.bodies[i];
 
         if (
-          body.queryId !== neighbor.queryId &&
-          body.bound.overlaps(neighbor.bound)
+          body.bound.overlaps(neighbor.bound) &&
+          body.queryId !== neighbor.queryId
         ) {
           neighbor.queryId = body.queryId;
           results.push(neighbor);
@@ -134,7 +90,7 @@ export class QuadTree {
   clear() {
     this.queryId = 0;
     this.stack.length = 0;
-    this.stack.push(this);
+    this.stack.push(this.node);
 
     while (this.stack.length) {
       const node = this.stack.pop();
@@ -154,9 +110,9 @@ export class QuadTree {
 
   render(ctx) {
     this.stack.length = 0;
-    this.stack.push(this);
+    this.stack.push(this.node);
 
-    ctx.strokeStyle = 'green';
+    ctx.strokeStyle = '#11f811';
     ctx.beginPath();
     while (this.stack.length) {
       const node = this.stack.pop();

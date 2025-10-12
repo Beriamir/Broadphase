@@ -1,4 +1,4 @@
-export class SAP {
+export class SweepAndPrune {
   constructor() {
     this.bodies = [];
   }
@@ -10,7 +10,7 @@ export class SAP {
     while (low < high) {
       const mid = Math.floor((low + high) * 0.5);
 
-      if (this.bodies[mid].bound.minX < body.bound.minX) {
+      if (body.bound.minX > this.bodies[mid].bound.minX) {
         low = mid + 1;
       } else {
         high = mid;
@@ -34,9 +34,8 @@ export class SAP {
 
   update() {
     const bodies = this.bodies;
-    const n = bodies.length;
 
-    for (let i = 1; i < n; ++i) {
+    for (let i = 1; i < bodies.length; ++i) {
       const current = bodies[i];
       let j = i - 1;
 
@@ -76,16 +75,16 @@ export class SAP {
   }
 
   render(ctx) {
+    ctx.strokeStyle = 'orange';
     ctx.beginPath();
     for (let i = 0; i < this.bodies.length; ++i) {
       const body = this.bodies[i];
-      ctx.moveTo(body.bound.minX, 0);
-      ctx.lineTo(body.bound.minX, 10);
-      ctx.moveTo(body.bound.maxX, 0);
-      ctx.lineTo(body.bound.maxX, 10);
-    }
 
-    ctx.strokeStyle = 'orange';
+      ctx.moveTo(body.bound.minX, body.position.y);
+      ctx.lineTo(body.bound.minX, 0);
+      ctx.moveTo(body.bound.maxX, body.position.y);
+      ctx.lineTo(body.bound.maxX, 0);
+    }
     ctx.stroke();
   }
 }
