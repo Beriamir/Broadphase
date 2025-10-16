@@ -21,6 +21,7 @@ The goal was to achieve faster collision detection without overcomplicating the 
 - Written in **JavaScript (ES Modules)**.
 - Designed for **game physics / simulation experiments**.
 - Focused more on _practical speed_ than full academic rigor.
+- Includes **dat.GUI** for real-time interaction and parameter control.
 
 ---
 
