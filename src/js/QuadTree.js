@@ -87,7 +87,7 @@ export class QuadTree {
     return results;
   }
 
-  clear() {
+  update() {
     this.queryId = 0;
     this.stack.length = 0;
     this.stack.push(this.node);

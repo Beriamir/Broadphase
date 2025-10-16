@@ -1,0 +1,23 @@
+{
+  "name": "spatial-partitioning",
+  "version": "1.0.0",
+  "description": "This project is all about testing and comparing different broadphase collision detection algorithms.   The goal was to achieve faster collision detection without overcomplicating the implementation.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beriamir/Broadphase.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Beriamir/Broadphase/issues"
+  },
+  "homepage": "https://github.com/Beriamir/Broadphase#readme",
+  "devDependencies": {
+    "dat.gui": "^0.7.9"
+  }
+}

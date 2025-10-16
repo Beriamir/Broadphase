@@ -12,6 +12,7 @@ export class SpatialGrid {
     this.queryId = -1;
 
     const cellsNum = this.cols * this.rows;
+
     for (let i = 0; i < cellsNum; ++i) {
       this.cells[i] = [];
     }

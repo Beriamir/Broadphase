@@ -6,75 +6,105 @@ import { SpatialGrid } from './SpatialGrid.js';
 import { SpatialHashGrid } from './SpatialHashGrid.js';
 import { SweepAndPrune } from './SweepAndPrune.js';
 import { KDTree } from './KDTree.js';
+import { Settings } from './Settings.js';
+import * as collision from './collision.js';
 
 onload = function () {
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   const canvasWidth = (canvas.width = 800);
   const canvasHeight = (canvas.height = 600);
+  const animator = new Animator(60);
+  const gui = new dat.GUI({
+    hideable: true,
+    autoPlace: false
+  });
+  const guiContainer = document.querySelector('.gui');
+  guiContainer.appendChild(gui.domElement);
 
   const circles = [];
-  const circlesNum = 500;
-  const circlesRadius = 10;
-
-  const animator = new Animator(60);
-  const quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4);
-  const spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 20);
-  const spatialHashGrid = new SpatialHashGrid(20, circlesNum * 2);
-  const sweepAndPrune = new SweepAndPrune();
-  const kDTree = new KDTree();
-
+  const nearby = [];
   const contacts = [];
   const contactsKey = new Set();
-  const broadphases = [
-    'QuadTree',
-    'SpatialGrid',
-    'SpatialHashGrid',
-    'SweepAndPrune',
-    'KDTree',
-    'BruteForce'
-  ];
-  const broadphaseBtn = document.getElementById('broadphaseBtn');
-  let broadphaseIndex = 0;
-  let collisionChecks = 0;
 
-  broadphaseBtn.addEventListener('click', () => {
-    broadphaseIndex = (broadphaseIndex + 1) % broadphases.length;
+  let spatialGrid = null;
+  let spatialHashGrid = null;
+  let quadTree = null;
+  let kDTree = null;
+  let sweepAndPrune = null;
 
-    let bgColor = null;
-    switch (broadphases[broadphaseIndex]) {
-      case 'QuadTree':
-        bgColor = '#11f811';
-        break;
-      case 'SpatialGrid':
-        bgColor = '#b2b2b2';
-        break;
-      case 'SpatialHashGrid':
-        bgColor = '#0067ff';
-        break;
-      case 'SweepAndPrune':
-        bgColor = 'orange';
-        break;
-      case 'KDTree':
-        bgColor = 'violet';
-        break;
-      case 'BruteForce':
-        bgColor = 'red';
-        break;
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+  let guiStartX = 0;
+  let guiStartY = 0;
+
+  const controlsFolder = gui.addFolder('Live Controls');
+  const statFolder = gui.addFolder('Realtime Performance');
+
+  controlsFolder
+    .add(Settings, 'broadphase', [
+      'Naive',
+      'Spatial Grid',
+      'Spatial Hash Grid',
+      'QuadTree',
+      'KD-Tree',
+      'Sweep And Prune'
+    ])
+    .name('Broadphase');
+  controlsFolder
+    .add(Settings, 'circlesCount', 1, 1000, 1)
+    .onFinishChange(init)
+    .name('Circles Count');
+  controlsFolder
+    .add(Settings, 'circlesRadius', 1, 20, 1)
+    .onChange(v => circles.forEach(c => (c.radius = Math.max(1, v))))
+    .name('Circles Radius');
+  controlsFolder.add(Settings, 'showBroadphase').name('Show Broadphase');
+  controlsFolder.open();
+
+  statFolder.add(Settings, 'fps').listen().name('FPS');
+  statFolder.add(Settings, 'collisionChecks').listen().name('Collision Checks');
+  statFolder.open();
+
+  guiContainer.addEventListener('pointerdown', event => {
+    if (event.target.classList.contains('gui-header')) {
+      const rect = guiContainer.getBoundingClientRect();
+      guiStartX = rect.left;
+      guiStartY = rect.top;
+
+      dragging = true;
+      startX = event.clientX;
+      startY = event.clientY;
     }
-
-    broadphaseBtn.style.backgroundColor = bgColor;
   });
 
-  function initialize() {
-    ctx.font = '12px Normal Verdana';
-    ctx.letterSpacing = '1px';
-    ctx.textAlign = 'start';
-    ctx.textBaseline = 'top';
+  guiContainer.addEventListener('pointermove', event => {
+    if (dragging) {
+      const deltaX = event.clientX - startX;
+      const deltaY = event.clientY - startY;
+
+      guiContainer.style.left = guiStartX + deltaX + 'px';
+      guiContainer.style.top = guiStartY + deltaY + 'px';
+    }
+  });
+
+  guiContainer.addEventListener('pointerup', event => {
+    dragging = false;
+  });
+
+  function init() {
     ctx.lineWidth = 0.5;
 
-    for (let i = 0; i < circlesNum; i++) {
-      const radius = Math.random() * circlesRadius + circlesRadius * 0.25;
+    spatialGrid = new SpatialGrid(0, 0, canvasWidth, canvasHeight, 20);
+    spatialHashGrid = new SpatialHashGrid(20, Settings.circlesCount * 2);
+    quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4);
+    kDTree = new KDTree();
+    sweepAndPrune = new SweepAndPrune();
+    circles.length = 0;
+
+    for (let i = 0; i < Settings.circlesCount; i++) {
+      const radius = Settings.circlesRadius;
       const x = Math.random() * (canvasWidth - radius * 2) + radius;
       const y = Math.random() * (canvasHeight - radius * 2) + radius;
       const circle = new Circle(x, y, radius);
@@ -82,175 +112,69 @@ onload = function () {
       circle.linearVelocity.random().scale(0.1);
       circles.push(circle);
 
-      quadTree.insert(circle);
       spatialGrid.insert(circle);
       spatialHashGrid.insert(circle);
-      sweepAndPrune.insert(circle);
+      quadTree.insert(circle);
       kDTree.insert(circle);
+      sweepAndPrune.insert(circle);
     }
   }
 
-  function render(ctx, dt, broadphase) {
+  function render(ctx) {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    switch (broadphase) {
-      case 'QuadTree':
-        quadTree.render(ctx);
-        break;
-      case 'SpatialGrid':
-        spatialGrid.render(ctx);
-        break;
-      case 'SpatialHashGrid':
-        spatialHashGrid.render(ctx);
-        break;
-      case 'SweepAndPrune':
-        sweepAndPrune.render(ctx);
-        break;
-      case 'KDTree':
-        kDTree.render(ctx);
-        break;
+
+    if (Settings.showBroadphase) {
+      ({
+        'Spatial Grid': spatialGrid,
+        'Spatial Hash Grid': spatialHashGrid,
+        QuadTree: quadTree,
+        'KD-Tree': kDTree,
+        'Sweep And Prune': sweepAndPrune
+      })[Settings.broadphase]?.render(ctx);
     }
 
     for (const circle of circles) {
       circle.render(ctx);
     }
-
-    const gui = [
-      `fps: ${Math.floor(1000 / dt)}`,
-      `objects: ${circlesNum}`,
-      `broadphase: ${broadphase}`,
-      `collision checks: ${collisionChecks}`
-    ];
-    const lineHeight = 16;
-    const n = gui.length;
-    const width = 200;
-    const height = lineHeight * n;
-
-    ctx.fillStyle = '#000000b6';
-    ctx.fillRect(lineHeight, lineHeight, width, height);
-    ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < n; ++i) {
-      ctx.fillText(gui[i], lineHeight, lineHeight * i + lineHeight);
-    }
-  }
-
-  function applyBoundaryLimits(circle) {
-    if (circle.position.x < circle.radius) {
-      circle.position.x = circle.radius;
-      circle.linearVelocity.x *= -1;
-    } else if (circle.position.x > canvasWidth - circle.radius) {
-      circle.position.x = canvasWidth - circle.radius;
-      circle.linearVelocity.x *= -1;
-    }
-
-    if (circle.position.y < circle.radius) {
-      circle.position.y = circle.radius;
-      circle.linearVelocity.y *= -1;
-    } else if (circle.position.y > canvasHeight - circle.radius) {
-      circle.position.y = canvasHeight - circle.radius;
-      circle.linearVelocity.y *= -1;
-    }
-  }
-
-  function collide(circleA, circleB) {
-    const dir = Vector.sub(circleB.position, circleA.position);
-    const distSq = dir.magnitudeSq();
-    const radii = circleA.radius + circleB.radius;
-
-    if (distSq === 0 || distSq >= radii * radii) {
-      return null;
-    }
-
-    const dist = Math.sqrt(distSq);
-    const normal = dir.scale(1 / dist);
-    const overlap = radii - dist;
-
-    return {
-      circleA,
-      circleB,
-      normal,
-      overlap
-    };
-  }
-
-  function solveVelocity(contact) {
-    const circleA = contact.circleA;
-    const circleB = contact.circleB;
-    const normal = contact.normal;
-    const relVel = Vector.sub(circleB.linearVelocity, circleA.linearVelocity);
-    const velNormal = relVel.dot(normal);
-
-    if (velNormal > 0) return;
-
-    const epsilon = 1;
-    const effMass = circleA.inverseMass + circleB.inverseMass;
-    const impulse = (-(1 + epsilon) * velNormal) / effMass;
-
-    circleA.linearVelocity.add(normal, -impulse * circleA.inverseMass);
-    circleB.linearVelocity.add(normal, impulse * circleB.inverseMass);
-  }
-
-  function solvePosition(contact) {
-    const circleA = contact.circleA;
-    const circleB = contact.circleB;
-    const normal = contact.normal;
-    const overlap = contact.overlap;
-
-    const beta = 0.1;
-    const effMass = circleA.inverseMass + circleB.inverseMass;
-    const impulse = (overlap * beta) / effMass;
-
-    circleA.position.add(normal, -impulse * circleA.inverseMass);
-    circleB.position.add(normal, impulse * circleB.inverseMass);
   }
 
   function update(dt) {
-    const broadphase = broadphases[broadphaseIndex];
-
-    render(ctx, dt, broadphase);
-
     contacts.length = 0;
     contactsKey.clear();
-    collisionChecks = 0;
-    switch (broadphase) {
-      case 'QuadTree':
-        quadTree.clear();
-        break;
-      case 'SpatialHashGrid':
-        spatialHashGrid.update();
-        break;
-      case 'SweepAndPrune':
-        sweepAndPrune.update();
-        break;
-      case 'KDTree':
-        kDTree.update();
-        break;
-    }
+    Settings.collisionChecks = 0;
+    Settings.fps = Math.floor(1000 / dt);
+
+    ({
+      'Spatial Hash Grid': spatialHashGrid,
+      QuadTree: quadTree,
+      'KD-Tree': kDTree,
+      'Sweep And Prune': sweepAndPrune
+    })[Settings.broadphase]?.update();
 
     for (let i = 0; i < circles.length; ++i) {
       const circle = circles[i];
-      let nearby = null;
+      nearby.length = 0;
 
-      switch (broadphase) {
+      switch (Settings.broadphase) {
+        case 'Spatial Grid':
+          spatialGrid.update(circle);
+          spatialGrid.query(circle, nearby);
+          break;
+        case 'Spatial Hash Grid':
+          spatialHashGrid.query(circle, nearby);
+          break;
         case 'QuadTree':
           quadTree.insert(circle);
-          nearby = quadTree.query(circle);
+          quadTree.query(circle, nearby);
           break;
-        case 'SpatialGrid':
-          spatialGrid.update(circle);
-          nearby = spatialGrid.query(circle);
+        case 'KD-Tree':
+          kDTree.query(circle, nearby);
           break;
-        case 'SpatialHashGrid':
-          nearby = spatialHashGrid.query(circle);
+        case 'Sweep And Prune':
+          sweepAndPrune.query(circle, nearby);
           break;
-        case 'SweepAndPrune':
-          nearby = sweepAndPrune.query(circle);
-          break;
-        case 'KDTree':
-          nearby = kDTree.query(circle);
-          break;
-        case 'BruteForce':
-          nearby = [];
-          for (let j = i + 1; j < circles.length; ++j) {
+        case 'Naive':
+          for (let j = i + 1; j < circles.length; j++) {
             nearby.push(circles[j]);
           }
           break;
@@ -259,32 +183,37 @@ onload = function () {
       for (const other of nearby) {
         const id0 = circle.id;
         const id1 = other.id;
-        const key = id0 < id1 ? id0 * circlesNum + id1 : id1 * circlesNum + id0;
+        const key =
+          id0 < id1
+            ? id0 * Settings.circlesCount + id1
+            : id1 * Settings.circlesCount + id0;
 
-        if (contactsKey.has(key)) {
-          continue;
-        } else contactsKey.add(key);
+        if (contactsKey.has(key)) continue;
+        else contactsKey.add(key);
 
-        const contact = collide(circle, other);
+        const contact = collision.collide(circle, other);
 
         if (contact) contacts.push(contact);
-        collisionChecks++;
+        Settings.collisionChecks++;
       }
     }
 
     for (const contact of contacts) {
-      solveVelocity(contact);
-      solvePosition(contact);
+      collision.solveVelocity(contact);
+      collision.solvePosition(contact);
     }
 
     for (const circle of circles) {
-      applyBoundaryLimits(circle);
+      collision.solveWallCollision(0, 0, canvasWidth, canvasHeight, circle);
 
       circle.position.add(circle.linearVelocity, dt);
       circle.updateBound();
     }
   }
 
-  initialize();
-  animator.animate(update);
+  init();
+  animator.animate(dt => {
+    render(ctx);
+    update(dt);
+  });
 };
