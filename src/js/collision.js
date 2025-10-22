@@ -1,6 +1,6 @@
-import { Vector } from './Vector.js';
+import Vector from './Vector.js';
 
-export class Collision {
+export default class Collision {
 	static collide(circleA, circleB) {
 		const dir = Vector.sub(circleB.position, circleA.position);
 		const distSq = dir.magnitudeSq();

@@ -1,4 +1,4 @@
-export class KDNode {
+export default class KDNode {
   constructor(body, axis, left = null, right = null) {
     this.body = body;
     this.axis = axis;

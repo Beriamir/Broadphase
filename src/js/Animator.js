@@ -1,4 +1,4 @@
-export class Animator {
+export default class Animator {
   constructor(fps) {
     this.interval = 1000 / fps;
     this.lastTime = performance.now();

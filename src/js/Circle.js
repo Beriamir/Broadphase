@@ -1,7 +1,7 @@
-import { Vector } from './Vector.js';
-import { Bound } from './Bound.js';
+import Vector from './Vector.js';
+import Bound from './Bound.js';
 
-export class Circle {
+export default class Circle {
 	static ids = -1;
 
 	constructor(x, y, radius) {

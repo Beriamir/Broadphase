@@ -1,4 +1,4 @@
-export class SpatialHashGrid {
+export default class SpatialHashGrid {
 	constructor(spacing, maxNum) {
 		this.invS = 1 / spacing;
 		this.tableSize = maxNum;

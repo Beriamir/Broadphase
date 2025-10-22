@@ -1,13 +1,13 @@
-import { Animator } from './Animator.js';
-import { Circle } from './Circle.js';
-import { QuadTree } from './QuadTree.js';
-import { SpatialGrid } from './SpatialGrid.js';
-import { SpatialHashGrid } from './SpatialHashGrid.js';
-import { SweepAndPrune } from './SweepAndPrune.js';
-import { KDTree } from './KDTree.js';
-import { Config } from './Config.js';
-import { Collision } from './Collision.js';
-import { GUI } from './lib/dat.gui.mjs';
+import Animator from './Animator.js';
+import Circle from './Circle.js';
+import SpatialGrid from './SpatialGrid.js';
+import SpatialHashGrid from './SpatialHashGrid.js';
+import QuadTree from './QuadTree.js';
+import KDTree from './KDTree.js';
+import SweepAndPrune from './SweepAndPrune.js';
+import Config from './Config.js';
+import Collision from './Collision.js';
+import dat from './lib/dat.gui.mjs';
 
 onload = function () {
 	const guiContainer = document.getElementById('gui');
@@ -16,7 +16,7 @@ onload = function () {
 	const canvasWidth = (canvas.width = 800);
 	const canvasHeight = (canvas.height = 600);
 	const animator = new Animator(60);
-	const gui = new GUI({
+	const gui = new dat.GUI({
 		hideable: true,
 		autoPlace: false
 	});

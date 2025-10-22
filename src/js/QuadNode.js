@@ -1,4 +1,4 @@
-export class QuadNode {
+export default class QuadNode {
   constructor(x, y, width, height) {
     this.minX = x;
     this.minY = y;

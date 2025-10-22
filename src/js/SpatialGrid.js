@@ -1,4 +1,4 @@
-export class SpatialGrid {
+export default class SpatialGrid {
   constructor(x, y, w, h, spacing = 50) {
     this.minX = x;
     this.minY = y;

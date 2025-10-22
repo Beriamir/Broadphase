@@ -1,4 +1,4 @@
-export class Bound {
+export default class Bound {
   constructor(minX, minY, maxX, maxY) {
     this.minX = minX;
     this.minY = minY;
