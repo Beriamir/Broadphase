@@ -1,71 +1,55 @@
 import { Vector } from './Vector.js';
 
-export function solveWallCollision(x, y, width, height, circle) {
-  if (circle.position.x < x + circle.radius) {
-    circle.position.x = x + circle.radius;
-    circle.linearVelocity.x *= -1;
-  } else if (circle.position.x > width - circle.radius) {
-    circle.position.x = width - circle.radius;
-    circle.linearVelocity.x *= -1;
-  }
+export class Collision {
+	static collide(circleA, circleB) {
+		const dir = Vector.sub(circleB.position, circleA.position);
+		const distSq = dir.magnitudeSq();
+		const radii = circleA.radius + circleB.radius;
 
-  if (circle.position.y < y + circle.radius) {
-    circle.position.y = y + circle.radius;
-    circle.linearVelocity.y *= -1;
-  } else if (circle.position.y > height - circle.radius) {
-    circle.position.y = height - circle.radius;
-    circle.linearVelocity.y *= -1;
-  }
-}
+		if (distSq === 0 || distSq >= radii * radii) {
+			return null;
+		}
 
-export function collide(circleA, circleB) {
-  const dir = Vector.sub(circleB.position, circleA.position);
-  const distSq = dir.magnitudeSq();
-  const radii = circleA.radius + circleB.radius;
+		const dist = Math.sqrt(distSq);
+		const normal = dir.scale(1 / dist);
+		const overlap = radii - dist;
 
-  if (distSq === 0 || distSq >= radii * radii) {
-    return null;
-  }
+		return {
+			circleA,
+			circleB,
+			normal,
+			overlap
+		};
+	}
 
-  const dist = Math.sqrt(distSq);
-  const normal = dir.scale(1 / dist);
-  const overlap = radii - dist;
+	static solveVelocity(contact) {
+		const circleA = contact.circleA;
+		const circleB = contact.circleB;
+		const normal = contact.normal;
+		const relVel = Vector.sub(circleB.linearVelocity, circleA.linearVelocity);
+		const velNormal = relVel.dot(normal);
 
-  return {
-    circleA,
-    circleB,
-    normal,
-    overlap
-  };
-}
+		if (velNormal > 0) return;
 
-export function solveVelocity(contact) {
-  const circleA = contact.circleA;
-  const circleB = contact.circleB;
-  const normal = contact.normal;
-  const relVel = Vector.sub(circleB.linearVelocity, circleA.linearVelocity);
-  const velNormal = relVel.dot(normal);
+		const epsilon = 1;
+		const effMass = circleA.inverseMass + circleB.inverseMass;
+		const impulse = (-(1 + epsilon) * velNormal) / effMass;
 
-  if (velNormal > 0) return;
+		circleA.linearVelocity.add(normal, -impulse * circleA.inverseMass);
+		circleB.linearVelocity.add(normal, impulse * circleB.inverseMass);
+	}
 
-  const epsilon = 1;
-  const effMass = circleA.inverseMass + circleB.inverseMass;
-  const impulse = (-(1 + epsilon) * velNormal) / effMass;
+	static solvePosition(contact) {
+		const circleA = contact.circleA;
+		const circleB = contact.circleB;
+		const normal = contact.normal;
+		const overlap = contact.overlap;
 
-  circleA.linearVelocity.add(normal, -impulse * circleA.inverseMass);
-  circleB.linearVelocity.add(normal, impulse * circleB.inverseMass);
-}
+		const beta = 0.1;
+		const effMass = circleA.inverseMass + circleB.inverseMass;
+		const impulse = (overlap * beta) / effMass;
 
-export function solvePosition(contact) {
-  const circleA = contact.circleA;
-  const circleB = contact.circleB;
-  const normal = contact.normal;
-  const overlap = contact.overlap;
-
-  const beta = 0.1;
-  const effMass = circleA.inverseMass + circleB.inverseMass;
-  const impulse = (overlap * beta) / effMass;
-
-  circleA.position.add(normal, -impulse * circleA.inverseMass);
-  circleB.position.add(normal, impulse * circleB.inverseMass);
+		circleA.position.add(normal, -impulse * circleA.inverseMass);
+		circleB.position.add(normal, impulse * circleB.inverseMass);
+	}
 }

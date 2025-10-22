@@ -1,4 +1,4 @@
-export const Settings = {
+export const Config = {
   broadphase: 'Naive',
   circlesCount: 100,
   circlesRadius: 10,
