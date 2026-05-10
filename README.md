@@ -12,6 +12,7 @@ The goal was to achieve faster collision detection without overcomplicating the 
 - **Spatial Hash Grid** — uniform grid-based partitioning (boundless).
 - **Sweep and Prune** — sorting along an axis for fast overlap checks.
 - **KD-Tree** — k-dimentional space partitioning.
+- **Dynamic BVH** — See ErinCatto_DynamicBVH_Full.pdf https://share.google/IvoSEL2Ix9mP1OYmf
 - **Brute Force** — the baseline, included because... why not?
 
 ---
