@@ -8,15 +8,35 @@ export default class Bound {
     this.height = maxY - minY
   }
 
-  get mean() {
-    return {
-      posX: (this.minX + this.maxX) * 0.5,
-      posY: (this.minY + this.maxY) * 0.5
-    }
+  get meanX() {
+    return (this.minX + this.maxX) * 0.5
+  }
+  get meanY() {
+    return (this.minY + this.maxY) * 0.5
+  }
+  get perimeter() {
+    const width = this.maxX - this.minX
+    const height = this.maxY - this.minY
+
+    return 2 * (width + height)
   }
 
-  get perimeter() {
-    return 2 * (this.width + this.height)
+  copy(aabb) {
+    this.minX = aabb.minX
+    this.minY = aabb.minY
+    this.maxX = aabb.maxX
+    this.maxY = aabb.maxY
+
+    return this
+  }
+
+  enlarge(value) {
+    this.minX -= value
+    this.minY -= value
+    this.maxX += value
+    this.maxY += value
+
+    return this
   }
 
   update(minX, minY, maxX, maxY) {
@@ -37,15 +57,6 @@ export default class Bound {
     )
   }
 
-  union(aabb) {
-    return new Bound(
-      Math.min(this.minX, aabb.minX),
-      Math.min(this.minY, aabb.minY),
-      Math.max(this.maxX, aabb.maxX),
-      Math.max(this.maxY, aabb.maxY)
-    )
-  }
-
   contains(aabb) {
     return (
       this.minX <= aabb.minX &&
@@ -53,5 +64,26 @@ export default class Bound {
       this.maxX >= aabb.maxX &&
       this.maxY >= aabb.maxY
     )
+  }
+
+  union(aabb, out = new Bound()) {
+    out.minX = Math.min(this.minX, aabb.minX)
+    out.minY = Math.min(this.minY, aabb.minY)
+    out.maxX = Math.max(this.maxX, aabb.maxX)
+    out.maxY = Math.max(this.maxY, aabb.maxY)
+
+    return out
+  }
+
+  unionPerimeter(aabb) {
+    const minX = Math.min(this.minX, aabb.minX)
+    const minY = Math.min(this.minY, aabb.minY)
+    const maxX = Math.max(this.maxX, aabb.maxX)
+    const maxY = Math.max(this.maxY, aabb.maxY)
+
+    const width = maxX - minX
+    const height = maxY - minY
+
+    return 2 * (width + height)
   }
 }

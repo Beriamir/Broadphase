@@ -112,7 +112,7 @@ onload = function () {
       const y = Math.random() * (canvasHeight - radius * 2) + radius
       const circle = new Circle(x, y, radius)
 
-      circle.linearVelocity.random().scale(0.1)
+      circle.linearVelocity.random().scale(0.05)
       circles.push(circle)
 
       spatialGrid.insert(circle)
@@ -120,7 +120,7 @@ onload = function () {
       quadTree.insert(circle)
       kDTree.insert(circle)
       sweepAndPrune.insert(circle)
-      bvhTree.insert(circle.bound, circle)
+      bvhTree.createNode(circle)
     }
   }
 
@@ -178,13 +178,7 @@ onload = function () {
           sweepAndPrune.query(circle, nearby)
           break
         case 'BVH Tree': {
-          const node = circle.node
-
-          if (!node.aabb.contains(circle.bound)) {
-            bvhTree.update(node, circle.bound, circle)
-          }
-
-          bvhTree.query(circle, nearby)
+          bvhTree.queryNode(circle, nearby)
           break
         }
         case 'Naive':
@@ -242,6 +236,7 @@ onload = function () {
 
       circle.updatePosition(dt)
       circle.updateBound()
+      bvhTree.updateNode(circle)
     }
   }
 
