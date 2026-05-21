@@ -59,15 +59,15 @@ export default class BVHTree {
     let ancestor = newParent
 
     while (ancestor !== null) {
-      const c1 = this.nodes[ancestor].child1
-      const c2 = this.nodes[ancestor].child2
+      const child1 = this.nodes[ancestor].child1
+      const child2 = this.nodes[ancestor].child2
 
-      this.nodes[c1].bound.union(
-        this.nodes[c2].bound,
+      this.nodes[child1].bound.union(
+        this.nodes[child2].bound,
         this.nodes[ancestor].bound
       )
       this.nodes[ancestor].height =
-        1 + Math.max(this.nodes[c1].height, this.nodes[c2].height)
+        1 + Math.max(this.nodes[child1].height, this.nodes[child2].height)
 
       this.rotate(ancestor)
 
@@ -197,9 +197,9 @@ export default class BVHTree {
 
       const costBase = this.nodes[C].bound.perimeter
       const costBF = this.nodes[B].bound.unionPerimeter(this.nodes[G].bound)
-      const costBG = this.nodes[B].bound.unionPerimeter(this.nodes[F].bound)
+      const costBG = this.nodes[F].bound.unionPerimeter(this.nodes[B].bound)
 
-      if (costBase < costBF && costBase < costBG) {
+      if (costBase <= costBF && costBase <= costBG) {
         return
       }
 
@@ -217,7 +217,7 @@ export default class BVHTree {
         this.nodes[C].height =
           1 + Math.max(this.nodes[B].height, this.nodes[G].height)
         this.nodes[node].height =
-          1 + Math.max(this.nodes[C].height, this.nodes[F].height)
+          1 + Math.max(this.nodes[F].height, this.nodes[C].height)
       } else {
         // Swap B and G
         this.nodes[node].child1 = G
@@ -226,13 +226,13 @@ export default class BVHTree {
         this.nodes[B].parent = C
         this.nodes[G].parent = node
 
-        this.nodes[B].bound.union(this.nodes[F].bound, this.nodes[C].bound)
+        this.nodes[F].bound.union(this.nodes[B].bound, this.nodes[C].bound)
         this.nodes[G].bound.union(this.nodes[C].bound, this.nodes[node].bound)
 
         this.nodes[C].height =
-          1 + Math.max(this.nodes[B].height, this.nodes[F].height)
+          1 + Math.max(this.nodes[F].height, this.nodes[B].height)
         this.nodes[node].height =
-          1 + Math.max(this.nodes[C].height, this.nodes[G].height)
+          1 + Math.max(this.nodes[G].height, this.nodes[C].height)
       }
     } else if (this.nodes[C].height === 0 && this.nodes[B].height > 0) {
       // C is leaf and B is internal node
@@ -240,10 +240,10 @@ export default class BVHTree {
       const E = this.nodes[B].child2
 
       const costBase = this.nodes[B].bound.perimeter
-      const costCE = this.nodes[C].bound.unionPerimeter(this.nodes[D].bound)
+      const costCE = this.nodes[D].bound.unionPerimeter(this.nodes[C].bound)
       const costCD = this.nodes[C].bound.unionPerimeter(this.nodes[E].bound)
 
-      if (costBase < costCE && costBase < costCD) {
+      if (costBase <= costCE && costBase <= costCD) {
         return
       }
 
@@ -255,11 +255,11 @@ export default class BVHTree {
         this.nodes[E].parent = node
         this.nodes[C].parent = B
 
-        this.nodes[C].bound.union(this.nodes[D].bound, this.nodes[B].bound)
+        this.nodes[D].bound.union(this.nodes[C].bound, this.nodes[B].bound)
         this.nodes[B].bound.union(this.nodes[E].bound, this.nodes[node].bound)
 
         this.nodes[B].height =
-          1 + Math.max(this.nodes[C].height, this.nodes[D].height)
+          1 + Math.max(this.nodes[D].height, this.nodes[C].height)
         this.nodes[node].height =
           1 + Math.max(this.nodes[B].height, this.nodes[E].height)
       } else {
@@ -300,7 +300,7 @@ export default class BVHTree {
       }
 
       const costBG =
-        areaB + this.nodes[B].bound.unionPerimeter(this.nodes[F].bound)
+        areaB + this.nodes[F].bound.unionPerimeter(this.nodes[B].bound)
       if (costBG < baseCost) {
         bestRotation = this.rotationType.BG
         baseCost = costBG
@@ -314,7 +314,7 @@ export default class BVHTree {
       }
 
       const costCE =
-        areaC + this.nodes[C].bound.unionPerimeter(this.nodes[D].bound)
+        areaC + this.nodes[D].bound.unionPerimeter(this.nodes[C].bound)
       if (costCE < baseCost) {
         bestRotation = this.rotationType.CE
         baseCost = costCE
@@ -349,11 +349,11 @@ export default class BVHTree {
           this.nodes[G].parent = node
           this.nodes[B].parent = C
 
-          this.nodes[B].bound.union(this.nodes[F].bound, this.nodes[C].bound)
+          this.nodes[F].bound.union(this.nodes[B].bound, this.nodes[C].bound)
           this.nodes[G].bound.union(this.nodes[C].bound, this.nodes[node].bound)
 
           this.nodes[C].height =
-            1 + Math.max(this.nodes[B].height, this.nodes[F].height)
+            1 + Math.max(this.nodes[F].height, this.nodes[B].height)
           this.nodes[node].height =
             1 + Math.max(this.nodes[G].height, this.nodes[C].height)
           break
@@ -366,11 +366,11 @@ export default class BVHTree {
           this.nodes[E].parent = node
           this.nodes[C].parent = B
 
-          this.nodes[C].bound.union(this.nodes[D].bound, this.nodes[B].bound)
+          this.nodes[D].bound.union(this.nodes[C].bound, this.nodes[B].bound)
           this.nodes[B].bound.union(this.nodes[E].bound, this.nodes[node].bound)
 
           this.nodes[B].height =
-            1 + Math.max(this.nodes[C].height, this.nodes[D].height)
+            1 + Math.max(this.nodes[D].height, this.nodes[C].height)
           this.nodes[node].height =
             1 + Math.max(this.nodes[B].height, this.nodes[E].height)
           break
@@ -539,7 +539,7 @@ export default class BVHTree {
       this.stack.push(this.nodes[node].child1)
       this.stack.push(this.nodes[node].child2)
     }
-    ctx.strokeStyle = '#dadde1'
+    ctx.strokeStyle = 'gray'
     ctx.stroke()
   }
 }
