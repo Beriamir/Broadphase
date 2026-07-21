@@ -1,33 +1,27 @@
 # Broadphase Collision Detection Benchmarks
 
-This project is all about testing and comparing different broadphase collision detection algorithms.  
-The goal was to achieve faster collision detection without overcomplicating the implementation.
+A JavaScript library comparing different broadphase collision detection algorithms for games and simulations.
 
----
+## 🚀 [Live Demo](https://beriamir.github.io/Broadphase/)
 
-### 🚀 [Live Demo](https://beriamir.github.io/Broadphase/)
+## Algorithms Implemented
 
----
+- **QuadTree** — hierarchical space partitioning
+- **Spatial Grid** — uniform grid-based partitioning
+- **Spatial Hash Grid** — hash-based spatial indexing
+- **Sweep and Prune** — axis-aligned bounding box pruning
+- **KD-Tree** — k-dimensional space partitioning
+- **Dynamic BVH** — bounding volume hierarchy
+- **Brute Force** — baseline comparison
 
-## Broadphases Implemented
+## Features
 
-- **QuadTree** — hierarchical space partitioning.
-- **Spatial Grid** — uniform grid-based partitioning.
-- **Spatial Hash Grid** — See [hashing.pdf](https://share.google/f012XjU6hqhxBdAcV)
-- **Sweep and Prune** — See [SAP.pdf](https://share.google/6sEf0LKiRy8QzhfUz)
-- **KD-Tree** — k-dimentional space partitioning.
-- **Dynamic BVH** — See [ErinCatto_DynamicBVH_Full.pdf](https://share.google/IvoSEL2Ix9mP1OYmf)
-- **Brute Force** — the baseline, included because... why not?
+- Written in **JavaScript (ES Modules)**
+- Interactive visualization with **dat.GUI** controls
+- Real-time performance benchmarking
+- Practical, optimized implementations
+- Great for game physics and simulation experiments
 
----
+## License
 
-## Tech Notes
-
-- Written in **JavaScript (ES Modules)**.
-- Designed for **game physics / simulation experiments**.
-- Focused more on _practical speed_ than full academic rigor.
-- Includes **dat.GUI** for real-time interaction and parameter control.
-
----
-
-> _"Simple, fast, and good enough"_
+MIT License - see LICENSE file for details
