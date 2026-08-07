@@ -1,19 +1,18 @@
-import Animator from './Animator.js'
-import Circle from './Circle.js'
-import SpatialGrid from './SpatialGrid.js'
-import SpatialHashGrid from './SpatialHashGrid.js'
-import QuadTree from './QuadTree.js'
-import KDTree from './KDTree.js'
-import SweepAndPrune from './SweepAndPrune.js'
-import BVHTree from './BVHTree.js'
-import Config from './Config.js'
-import Collision from './Collision.js'
-import dat from './lib/dat.gui.mjs'
+import Animator from "./Animator.js"
+import Circle from "./Circle.js"
+import SpatialGrid from "./SpatialGrid.js"
+import SpatialHashGrid from "./SpatialHashGrid.js"
+import QuadTree from "./QuadTree.js"
+import KDTree from "./KDTree.js"
+import SweepAndPrune from "./SweepAndPrune.js"
+import Config from "./Config.js"
+import Collision from "./Collision.js"
+import dat from "./lib/dat.gui.mjs"
 
 onload = function () {
-  const guiContainer = document.getElementById('gui')
-  const canvas = document.getElementById('canvas')
-  const ctx = canvas.getContext('2d')
+  const guiContainer = document.getElementById("gui")
+  const canvas = document.getElementById("canvas")
+  const ctx = canvas.getContext("2d")
   const canvasWidth = (canvas.width = 800)
   const canvasHeight = (canvas.height = 600)
   const animator = new Animator(60)
@@ -32,7 +31,6 @@ onload = function () {
   let quadTree = null
   let kDTree = null
   let sweepAndPrune = null
-  let bvhTree = null
 
   let dragging = false
   let startX = 0
@@ -40,39 +38,38 @@ onload = function () {
   let guiStartX = 0
   let guiStartY = 0
 
-  const controlsFolder = gui.addFolder('Live Controls')
-  const statFolder = gui.addFolder('Realtime Performance')
+  const controlsFolder = gui.addFolder("Live Controls")
+  const statFolder = gui.addFolder("Realtime Performance")
 
   controlsFolder
-    .add(Config, 'broadphase', [
-      'Naive',
-      'Spatial Grid',
-      'Spatial Hash Grid',
-      'QuadTree',
-      'KD-Tree',
-      'Sweep And Prune',
-      'BVH Tree'
+    .add(Config, "broadphase", [
+      "Naive",
+      "Spatial Grid",
+      "Spatial Hash Grid",
+      "QuadTree",
+      "KD-Tree",
+      "Sweep And Prune"
     ])
-    .name('Broadphase')
+    .name("Broadphase")
   controlsFolder
-    .add(Config, 'circlesCount', 1, 1000, 1)
+    .add(Config, "circlesCount", 1, 1000, 1)
     .onFinishChange(init)
-    .name('Circles Count')
+    .name("Circles Count")
   controlsFolder
-    .add(Config, 'circlesRadius', 1, 20, 1)
+    .add(Config, "circlesRadius", 1, 20, 1)
     .onChange(v => circles.forEach(c => (c.radius = Math.max(1, v))))
-    .name('Circles Radius')
-  controlsFolder.add(Config, 'showBroadphase').name('Show Broadphase')
+    .name("Circles Radius")
+  controlsFolder.add(Config, "showBroadphase").name("Show Broadphase")
   controlsFolder.open()
 
-  statFolder.add(Config, 'fps').listen().name('FPS')
-  statFolder.add(Config, 'collisionChecks').listen().name('Collision Checks')
+  statFolder.add(Config, "fps").listen().name("FPS")
+  statFolder.add(Config, "collisionChecks").listen().name("Collision Checks")
   statFolder.open()
 
   guiContainer.appendChild(gui.domElement)
 
-  guiContainer.addEventListener('pointerdown', event => {
-    if (event.target.classList.contains('gui-header')) {
+  guiContainer.addEventListener("pointerdown", event => {
+    if (event.target.classList.contains("gui-header")) {
       const rect = guiContainer.getBoundingClientRect()
       guiStartX = rect.left
       guiStartY = rect.top
@@ -83,17 +80,17 @@ onload = function () {
     }
   })
 
-  window.addEventListener('pointermove', event => {
+  window.addEventListener("pointermove", event => {
     if (dragging) {
       const deltaX = event.clientX - startX
       const deltaY = event.clientY - startY
 
-      guiContainer.style.left = guiStartX + deltaX + 'px'
-      guiContainer.style.top = guiStartY + deltaY + 'px'
+      guiContainer.style.left = guiStartX + deltaX + "px"
+      guiContainer.style.top = guiStartY + deltaY + "px"
     }
   })
 
-  guiContainer.addEventListener('pointerup', event => {
+  guiContainer.addEventListener("pointerup", event => {
     dragging = false
   })
 
@@ -104,7 +101,6 @@ onload = function () {
     quadTree = new QuadTree(0, 0, canvasWidth, canvasHeight, 4)
     kDTree = new KDTree()
     sweepAndPrune = new SweepAndPrune()
-    bvhTree = new BVHTree()
 
     for (let i = 0; i < Config.circlesCount; i++) {
       const radius = Config.circlesRadius
@@ -120,7 +116,6 @@ onload = function () {
       quadTree.insert(circle)
       kDTree.insert(circle)
       sweepAndPrune.insert(circle)
-      bvhTree.createNode(circle)
     }
   }
 
@@ -129,12 +124,11 @@ onload = function () {
 
     if (Config.showBroadphase) {
       ;({
-        'Spatial Grid': spatialGrid,
-        'Spatial Hash Grid': spatialHashGrid,
+        "Spatial Grid": spatialGrid,
+        "Spatial Hash Grid": spatialHashGrid,
         QuadTree: quadTree,
-        'KD-Tree': kDTree,
-        'Sweep And Prune': sweepAndPrune,
-        'BVH Tree': bvhTree
+        "KD-Tree": kDTree,
+        "Sweep And Prune": sweepAndPrune
       })[Config.broadphase]?.render(ctx)
     }
 
@@ -149,10 +143,10 @@ onload = function () {
     Config.collisionChecks = 0
     Config.fps = Math.floor(1000 / dt)
     ;({
-      'Spatial Hash Grid': spatialHashGrid,
+      "Spatial Hash Grid": spatialHashGrid,
       QuadTree: quadTree,
-      'KD-Tree': kDTree,
-      'Sweep And Prune': sweepAndPrune
+      "KD-Tree": kDTree,
+      "Sweep And Prune": sweepAndPrune
     })[Config.broadphase]?.update()
 
     for (let i = 0; i < circles.length; ++i) {
@@ -160,28 +154,24 @@ onload = function () {
       nearby.length = 0
 
       switch (Config.broadphase) {
-        case 'Spatial Grid':
+        case "Spatial Grid":
           spatialGrid.update(circle)
           spatialGrid.query(circle, nearby)
           break
-        case 'Spatial Hash Grid':
+        case "Spatial Hash Grid":
           spatialHashGrid.query(circle, nearby)
           break
-        case 'QuadTree':
+        case "QuadTree":
           quadTree.insert(circle)
           quadTree.query(circle, nearby)
           break
-        case 'KD-Tree':
+        case "KD-Tree":
           kDTree.query(circle, nearby)
           break
-        case 'Sweep And Prune':
+        case "Sweep And Prune":
           sweepAndPrune.query(circle, nearby)
           break
-        case 'BVH Tree': {
-          bvhTree.queryNode(circle, nearby)
-          break
-        }
-        case 'Naive':
+        case "Naive":
           for (let j = i + 1; j < circles.length; j++) {
             nearby.push(circles[j])
           }
@@ -236,7 +226,6 @@ onload = function () {
 
       circle.updatePosition(dt)
       circle.updateBound()
-      bvhTree.updateNode(circle)
     }
   }
 

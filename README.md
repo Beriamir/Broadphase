@@ -6,12 +6,11 @@ A JavaScript library comparing different broadphase collision detection algorith
 
 ## Algorithms Implemented
 
-- **QuadTree** — hierarchical space partitioning
 - **Spatial Grid** — uniform grid-based partitioning
 - **Spatial Hash Grid** — See [hashing.pdf](https://share.google/f012XjU6hqhxBdAcV)
-- **Sweep and Prune** — See [SAP.pdf](https://share.google/6sEf0LKiRy8QzhfUz)
+- **QuadTree** — hierarchical space partitioning
 - **KD-Tree** — k-dimensional space partitioning
-- **Dynamic BVH** — See [ErinCatto_DynamicBVH_Full.pdf](https://share.google/IvoSEL2Ix9mP1OYmf)
+- **Sweep and Prune** — See [SAP.pdf](https://share.google/6sEf0LKiRy8QzhfUz)
 - **Brute Force** — baseline comparison
 
 ## Features
@@ -19,7 +18,6 @@ A JavaScript library comparing different broadphase collision detection algorith
 - Written in **JavaScript (ES Modules)**
 - Interactive visualization with **dat.GUI** controls
 - Real-time performance benchmarking
-- Practical, optimized implementations
 - Great for game physics and simulation experiments
 
 ## License
